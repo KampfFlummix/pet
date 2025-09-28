@@ -4,7 +4,7 @@ quest feature_pet_main begin
 			local playerID = pc.get_id()
 			
 			-- Tägliche Missionen zuweisen (falls keine vorhanden)
-			local missions = feature_pet_missions.GetPlayerMissions(playerID)
+			local missions = GetPlayerMissions(playerID)
 			if not missions or #missions == 0 then
 				feature_pet_missions.AssignDailyMissions(playerID)
 			end
@@ -18,7 +18,7 @@ quest feature_pet_main begin
 			local monsterLevel = npc.get_level()
 			
 			-- Pet XP für Monster-Kill
-			local activePet = feature_pet_system.GetActivePet(playerID)
+			local activePet = GetActivePet(playerID)
 			if activePet then
 				local xpGain = monsterLevel * 10
 				feature_pet_system.AddPetXP(playerID, activePet.id, xpGain)
@@ -111,7 +111,7 @@ quest feature_pet_main begin
 			pc.say(playerID, "Wähle ein Pet zum Opfern:")
 			
 			local pets = feature_pet_system.GetPlayerPets(playerID)
-			local activePet = feature_pet_system.GetActivePet(playerID)
+			local activePet = GetActivePet(playerID)
 			local availablePets = {}
 			
 			for _, pet in ipairs(pets) do
@@ -149,7 +149,7 @@ quest feature_pet_main begin
 		when levelup begin
 			-- Pet XP für Level-Up des Spielers
 			local playerID = pc.get_id()
-			local activePet = feature_pet_system.GetActivePet(playerID)
+			local activePet = GetActivePet(playerID)
 			if activePet then
 				local xpGain = pc.get_level() * 100
 				feature_pet_system.AddPetXP(playerID, activePet.id, xpGain)
