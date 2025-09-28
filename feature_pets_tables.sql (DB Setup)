@@ -1,0 +1,102 @@
+-- Feature Pet System Database Setup
+-- Für Metin2 Server - Ohne Source Code benötigt
+
+SET FOREIGN_KEY_CHECKS=0;
+
+-- Haupt-Pet Tabelle
+CREATE TABLE IF NOT EXISTS `feature_pets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `owner_id` int(11) NOT NULL,
+  `pet_vnum` int(11) NOT NULL,
+  `name` varchar(32) NOT NULL,
+  `level` int(11) DEFAULT 1,
+  `xp` bigint(20) DEFAULT 0,
+  `evolution_stage` int(11) DEFAULT 0,
+  `quality_level` tinyint(4) DEFAULT 1,
+  `is_active` tinyint(1) DEFAULT 0,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `owner_id` (`owner_id`),
+  KEY `is_active` (`is_active`),
+  KEY `owner_active` (`owner_id`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Pet Skills Tabelle
+CREATE TABLE IF NOT EXISTS `feature_pet_skills` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pet_id` int(11) NOT NULL,
+  `skill_type` varchar(32) NOT NULL,
+  `base_value` int(11) DEFAULT 0,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`pet_id`) REFERENCES `feature_pets` (`id`) ON DELETE CASCADE,
+  KEY `pet_id` (`pet_id`),
+  KEY `skill_type` (`skill_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Pet DNA System
+CREATE TABLE IF NOT EXISTS `feature_pet_dna` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `pet_id` int(11) NOT NULL,
+  `dna_type` varchar(32) NOT NULL,
+  `dna_level` int(11) DEFAULT 1,
+  `obtained_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`pet_id`) REFERENCES `feature_pets` (`id`) ON DELETE CASCADE,
+  KEY `pet_id` (`pet_id`),
+  KEY `dna_type` (`dna_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Pet Missions/Quests
+CREATE TABLE IF NOT EXISTS `feature_pet_missions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `owner_id` int(11) NOT NULL,
+  `mission_type` varchar(32) NOT NULL,
+  `progress` int(11) DEFAULT 0,
+  `target` int(11) DEFAULT 0,
+  `completed` tinyint(1) DEFAULT 0,
+  `reward_claimed` tinyint(1) DEFAULT 0,
+  `assigned_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `owner_id` (`owner_id`),
+  KEY `mission_type` (`mission_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Pet Arena Rankings
+CREATE TABLE IF NOT EXISTS `feature_pet_rankings` (
+  `pet_id` int(11) NOT NULL,
+  `total_power` int(11) DEFAULT 0,
+  `battles_won` int(11) DEFAULT 0,
+  `battles_lost` int(11) DEFAULT 0,
+  `ranking` int(11) DEFAULT 0,
+  `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`pet_id`),
+  KEY `ranking` (`ranking`),
+  KEY `total_power` (`total_power`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Pet Fusion Log
+CREATE TABLE IF NOT EXISTS `feature_pet_fusions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `owner_id` int(11) NOT NULL,
+  `main_pet_id` int(11) NOT NULL,
+  `sacrifice_pet_id` int(11) NOT NULL,
+  `fusion_type` varchar(32) NOT NULL,
+  `success` tinyint(1) DEFAULT 0,
+  `result_quality` int(11) DEFAULT 0,
+  `fused_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `owner_id` (`owner_id`),
+  KEY `main_pet_id` (`main_pet_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+SET FOREIGN_KEY_CHECKS=1;
+
+-- Initial Data (Optionale Beispiel-Pets)
+INSERT INTO `feature_pets` (`owner_id`, `pet_vnum`, `name`, `quality_level`) VALUES
+(1, 5001, 'Drachenkrieger', 4),
+(1, 5002, 'Eisphönix', 7);
+
+-- Erfolgsmeldung
+SELECT 'Feature Pet System Datenbank erfolgreich erstellt!' as status;
