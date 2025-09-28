@@ -1,0 +1,301 @@
+quest feature_pet_npc begin
+	state start begin
+		when 9001.chat."Pet-Meister" begin -- Weapon Shop als Pet-Meister
+			say_title(mob_name(npc.get_race())..":")
+			say("Hallo Abenteurer! Ich bin der Pet-Meister.")
+			say("Ich kann dir mit deinen Feature-Pets helfen.")
+			say("")
+			select("Pet-Management", "Pet-Fusion", "Missionen", "Arena-Rangliste", "Belohnungen abholen", "Verlassen")
+			wait()
+		end
+		
+		when select begin
+			if input == 1 then
+				ShowPetManagement()
+			elseif input == 2 then
+				ShowPetFusion()
+			elseif input == 3 then
+				ShowMissions()
+			elseif input == 4 then
+				ShowArenaRankings()
+			elseif input == 5 then
+				ShowRewards()
+			else
+				say("Komm bald wieder!")
+				return
+			end
+		end
+	end
+end
+
+function ShowPetManagement()
+	local playerID = pc.get_id()
+	local pets = feature_pet_system.GetPlayerPets(playerID)
+	
+	if not pets or #pets == 0 then
+		say("Du hast noch keine Pets!")
+		say("Besorge dir eine Feature-Pet-Truhe!")
+		return
+	end
+	
+	say("Deine Pets:")
+	for i, pet in ipairs(pets) do
+		local status = pet.is_active == 1 and "⭐ AKTIV" or ""
+		select(i, string.format("%s (Lv%d, Q%d) %s", pet.name, pet.level, pet.quality_level, status))
+	end
+	select(#pets + 1, "Zurück")
+	
+	when select with input <= #pets do
+		local selectedPet = pets[input]
+		ShowPetDetails(selectedPet)
+	end
+end
+
+function ShowPetDetails(pet)
+	local playerID = pc.get_id()
+	
+	say_title("Pet-Details:")
+	say(string.format("Name: %s", pet.name))
+	say(string.format("Level: %d / 120", pet.level))
+	say(string.format("Quality: %s", feature_pet_quality.GetQualityDisplayName(pet.quality_level)))
+	say(string.format("Evolution: Stufe %d", pet.evolution_stage))
+	say(string.format("XP: %d / %d", pet.xp, feature_pet_system.GetXPForLevel(pet.level)))
+	
+	-- Skills anzeigen
+	local skills = feature_pet_system.GetPetSkills(pet.id)
+	if skills and #skills > 0 then
+		say("")
+		say("Aktive Skills:")
+		for _, skill in ipairs(skills) do
+			local skillName = feature_pet_skills.GetSkillDisplayName(skill.skill_type)
+			local currentBonus = feature_pet_system.GetPetBonus(playerID, skill.skill_type)
+			say(string.format("- %s: %.1f%%", skillName, currentBonus))
+		end
+	end
+	
+	-- DNA anzeigen
+	local dna = feature_pet_dna.GetPetDNAInfo(pet.id)
+	if dna and #dna > 0 then
+		say("")
+		say("DNA-Modifikationen:")
+		for _, d in ipairs(dna) do
+			local dnaInfo = feature_pet_dna.DNA_TYPES[d.dna_type]
+			if dnaInfo then
+				say(string.format("- %s (Stufe %d)", dnaInfo.name, d.dna_level))
+			end
+		end
+	end
+	
+	say("")
+	if pet.is_active == 0 then
+		select(1, "Pet aktivieren")
+	else
+		select(1, "Pet deaktivieren")
+	end
+	select(2, "Zurück")
+	
+	when select begin
+		if input == 1 then
+			if pet.is_active == 0 then
+				feature_pet_system.ActivatePet(playerID, pet.id)
+				say("Pet aktiviert!")
+			else
+				feature_pet_system.DeactivatePet(playerID)
+				say("Pet deaktiviert!")
+			end
+		end
+		ShowPetManagement()
+	end
+end
+
+function ShowPetFusion()
+	local playerID = pc.get_id()
+	local activePet = GetActivePet(playerID)
+	
+	if not activePet then
+		say("Du musst erst ein Pet aktivieren!")
+		return
+	end
+	
+	local pets = feature_pet_system.GetPlayerPets(playerID)
+	local availablePets = {}
+	
+	for _, pet in ipairs(pets) do
+		if not pet.is_active and pet.id ~= activePet.id then
+			table.insert(availablePets, pet)
+		end
+	end
+	
+	if #availablePets == 0 then
+		say("Keine Pets zum Opfern verfügbar!")
+		say("Du brauchst mindestens 2 Pets für Fusion.")
+		return
+	end
+	
+	say("Fusion: "..activePet.name.." + ?")
+	say("Wähle ein Opfer-Pet:")
+	
+	for i, pet in ipairs(availablePets) do
+		select(i, string.format("%s (Lv%d, Q%d)", pet.name, pet.level, pet.quality_level))
+	end
+	select(#availablePets + 1, "Zurück")
+	
+	when select with input <= #availablePets do
+		local sacrificePet = availablePets[input]
+		
+		say("Bist du sicher?")
+		say(string.format("%s (Lv%d) wird %s (Lv%d) opfern!", activePet.name, activePet.level, sacrificePet.name, sacrificePet.level))
+		say("Das Opfer-Pet wird gelöscht!")
+		
+		select(1, "Ja, fusionieren!", 2, "Nein, abbrechen!")
+		
+		when select with input == 1 do
+			local success, message = feature_pet_fusion.StartPetFusion(playerID, activePet.id, sacrificePet.id)
+			say(message)
+			ShowPetManagement()
+		end
+	end
+end
+
+function ShowMissions()
+	local playerID = pc.get_id()
+	local missions = GetPlayerMissions(playerID)
+	
+	if not missions or #missions == 0 then
+		say("Keine aktiven Missionen!")
+		say("Tägliche Missionen werden automatisch zugewiesen.")
+		return
+	end
+	
+	say("Deine Pet-Missionen:")
+	local hasCompleted = false
+	
+	for i, mission in ipairs(missions) do
+		local missionInfo = feature_pet_missions.GetMissionInfo(mission.mission_type)
+		if missionInfo then
+			local status = ""
+			if mission.completed == 1 then
+				if mission.reward_claimed == 0 then
+					status = "✅ BELOHNUNG BEREIT"
+					hasCompleted = true
+				else
+					status = "✅ ABGESCHLOSSEN"
+				end
+			else
+				status = string.format("📝 %d/%d", mission.progress, mission.target)
+			end
+			
+			select(i, string.format("%s - %s", missionInfo.name, status))
+		end
+	end
+	
+	if hasCompleted then
+		select(#missions + 1, "Alle Belohnungen abholen")
+	end
+	select(#missions + 2, "Zurück")
+	
+	when select begin
+		if input <= #missions then
+			local mission = missions[input]
+			if mission.completed == 1 and mission.reward_claimed == 0 then
+				feature_pet_missions.ClaimMissionReward(playerID, mission.mission_type)
+			else
+				say("Mission noch nicht abgeschlossen oder Belohnung bereits abgeholt!")
+			end
+			ShowMissions()
+		elseif input == #missions + 1 then
+			-- Alle Belohnungen abholen
+			for _, mission in ipairs(missions) do
+				if mission.completed == 1 and mission.reward_claimed == 0 then
+					feature_pet_missions.ClaimMissionReward(playerID, mission.mission_type)
+				end
+			end
+			say("Alle Belohnungen abgeholt!")
+			ShowMissions()
+		else
+			return
+		end
+	end
+end
+
+function ShowArenaRankings()
+	local topPets = feature_pet_arena.GetTopRankedPets(10)
+	
+	say("🏆 Pet-Arena Rangliste:")
+	say("Die stärksten Pets des Servers:")
+	say("")
+	
+	if not topPets or #topPets == 0 then
+		say("Noch keine Kämpfe aufgezeichnet!")
+		return
+	end
+	
+	for i, rankedPet in ipairs(topPets) do
+		local pet = feature_pet_system.GetPetByID(rankedPet.pet_id)
+		if pet then
+			local owner = pc.get_name_by_id(pet.owner_id) or "Unbekannt"
+			say(string.format("%d. %s (Lv%d) - %s", i, pet.name, pet.level, owner))
+		end
+	end
+	
+	say("")
+	say("Besiege andere Pets in der Arena")
+	say("um aufzusteigen!")
+	
+	select(1, "Zurück")
+	when select do
+		return
+	end
+end
+
+function ShowRewards()
+	say("Hier kannst du verschiedene Belohnungen abholen.")
+	say("")
+	
+	select(1, "Tägliche Login-Belohnung", 2, "Event-Belohnungen", 3, "Zurück")
+	
+	when select begin
+		if input == 1 then
+			ClaimDailyLoginReward()
+		elseif input == 2 then
+			ClaimEventRewards()
+		else
+			return
+		end
+	end
+end
+
+function ClaimDailyLoginReward()
+	local playerID = pc.get_id()
+	local lastClaim = pc.getqf("feature_pet_last_login") or 0
+	local currentTime = os.time()
+	
+	-- Nur einmal pro Tag
+	if os.date("%Y%m%d", lastClaim) == os.date("%Y%m%d", currentTime) then
+		say("Tägliche Belohnung bereits abgeholt!")
+		return
+	end
+	
+	-- Belohnung geben
+	pc.give_item2(playerID, 1005100, 1) -- Metin-DNA
+	pc.give_item2(playerID, 1005001, 1) -- Quality Wechsel Item
+	pc.change_money(50000)
+	
+	pc.setqf("feature_pet_last_login", currentTime)
+	say("Tägliche Belohnung abgeholt!")
+	say("- 1x Metinstein-DNA")
+	say("- 1x Quality-Wechsel Item") 
+	say("- 50.000 Yang")
+end
+
+function ClaimEventRewards()
+	say("Aktuelle Event-Belohnungen:")
+	say("Keine aktiven Events.")
+	say("")
+	say("Schau bei saisonalen Events vorbei!")
+	
+	select(1, "Zurück")
+	when select do
+		return
+	end
+end
