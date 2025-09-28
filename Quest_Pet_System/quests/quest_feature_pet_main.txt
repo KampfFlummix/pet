@@ -6,11 +6,11 @@ quest feature_pet_main begin
 			-- Tägliche Missionen zuweisen (falls keine vorhanden)
 			local missions = GetPlayerMissions(playerID)
 			if not missions or #missions == 0 then
-				feature_pet_missions.AssignDailyMissions(playerID)
+				AssignDailyMissions(playerID)
 			end
 			
 			-- Saisonale Events prüfen
-			feature_pet_events.CheckSeasonalEvents()
+			CheckSeasonalEvents()
 		end
 		
 		when kill with not npc.is_pet() and not npc.is_mission() begin
@@ -21,24 +21,24 @@ quest feature_pet_main begin
 			local activePet = GetActivePet(playerID)
 			if activePet then
 				local xpGain = monsterLevel * 10
-				feature_pet_system.AddPetXP(playerID, activePet.id, xpGain)
+				AddPetXP(playerID, activePet.id, xpGain)
 				
 				-- Mission-Fortschritt: Monster töten
-				feature_pet_missions.UpdateMissionProgress(playerID, "KILL_MOBS", 1)
+				UpdateMissionProgress(playerID, "KILL_MOBS", 1)
 				
 				-- Seelenfresser-DNA Effekt
-				feature_pet_dna.ApplySoulEaterEffect(playerID, npc.get_race())
+				ApplySoulEaterEffect(playerID, npc.get_race())
 				
 				-- Event-Bonus anwenden
-				local eventBonus = feature_pet_events.GetEventBonus(playerID, "DROP_EXP")
+				local eventBonus = GetEventBonus(playerID, "DROP_EXP")
 				if eventBonus > 0 then
-					feature_pet_system.AddPetXP(playerID, activePet.id, xpGain * eventBonus / 100)
+					AddPetXP(playerID, activePet.id, xpGain * eventBonus / 100)
 				end
 			end
 			
 			-- Boss-Kill
 			if npc.is_boss() then
-				feature_pet_missions.UpdateMissionProgress(playerID, "KILL_BOSSES", 1)
+				UpdateMissionProgress(playerID, "KILL_BOSSES", 1)
 				
 				-- Chance auf DNA-Drop (10%)
 				if math.random(1, 100) <= 10 then
@@ -52,7 +52,7 @@ quest feature_pet_main begin
 		
 		when 1005000.receive begin -- Feature Pet Truhe
 			local playerID = pc.get_id()
-			local result = feature_pet_chest.UseFeaturePetChest(playerID)
+			local result = UseFeaturePetChest(playerID)
 			if result then
 				pc.remove_item(1005000, 1)
 			end
@@ -62,7 +62,7 @@ quest feature_pet_main begin
 			local playerID = pc.get_id()
 			pc.say(playerID, "Wähle ein Pet für Quality-Wechsel:")
 			
-			local pets = feature_pet_system.GetPlayerPets(playerID)
+			local pets = GetPlayerPets(playerID)
 			if not pets or #pets == 0 then
 				pc.say(playerID, "Du hast keine Pets!")
 				return
@@ -78,14 +78,14 @@ quest feature_pet_main begin
 				pc.say(playerID, "Wähle neue Quality:")
 				
 				for quality = 1, 8 do
-					local qualityName = feature_pet_quality.GetQualityDisplayName(quality)
+					local qualityName = GetQualityDisplayName(quality)
 					select(quality, qualityName)
 				end
 				select(9, "Abbrechen")
 				
 				when select with input <= 8 do
 					local newQuality = input
-					local success = feature_pet_quality.UseQualitySwitchItem(playerID, selectedPet.id, newQuality)
+					local success = UseQualitySwitchItem(playerID, selectedPet.id, newQuality)
 					if success then
 						pc.remove_item(1005001, 1)
 						pc.say(playerID, "✅ Quality erfolgreich geändert!")
@@ -100,7 +100,7 @@ quest feature_pet_main begin
 			local playerID = pc.get_id()
 			local itemVnum = get_trigger_item_vnum()
 			
-			local success = feature_pet_dna.UseDNAItem(playerID, itemVnum)
+			local success = UseDNAItem(playerID, itemVnum)
 			if success then
 				pc.remove_item(itemVnum, 1)
 			end
@@ -110,7 +110,7 @@ quest feature_pet_main begin
 			local playerID = pc.get_id()
 			pc.say(playerID, "Wähle ein Pet zum Opfern:")
 			
-			local pets = feature_pet_system.GetPlayerPets(playerID)
+			local pets = GetPlayerPets(playerID)
 			local activePet = GetActivePet(playerID)
 			local availablePets = {}
 			
@@ -133,7 +133,7 @@ quest feature_pet_main begin
 			when select with input <= #availablePets do
 				local sacrificePet = availablePets[input]
 				if activePet then
-					local success, message = feature_pet_fusion.StartPetFusion(playerID, activePet.id, sacrificePet.id)
+					local success, message = StartPetFusion(playerID, activePet.id, sacrificePet.id)
 					if success then
 						pc.remove_item(1005200, 1)
 						pc.say(playerID, message)
@@ -152,7 +152,7 @@ quest feature_pet_main begin
 			local activePet = GetActivePet(playerID)
 			if activePet then
 				local xpGain = pc.get_level() * 100
-				feature_pet_system.AddPetXP(playerID, activePet.id, xpGain)
+				AddPetXP(playerID, activePet.id, xpGain)
 			end
 		end
 	end
