@@ -138,29 +138,6 @@ function GetSkillScaleFactor(skillType)
     return 0.07 -- Standard
 end
 
-function GetPetByID(petID)
-    local query = db.query("SELECT * FROM feature_pets WHERE id = " .. petID)
-    if query and #query > 0 then return query[1] end
-    return nil
-end
-
-function DeactivatePet(playerID)
-    db.execute("UPDATE feature_pets SET is_active = 0 WHERE owner_id = " .. playerID)
-    return true
-end
-
-function GetPetSkills(petID)
-    return db.query("SELECT * FROM feature_pet_skills WHERE pet_id = " .. petID)
-end
-
-function GetTotalSkillValue(petID)
-    local skills = db.query("SELECT base_value FROM feature_pet_skills WHERE pet_id = " .. petID)
-    local total = 0
-    for _, skill in ipairs(skills) do
-        total = total + skill.base_value
-    end
-    return total
-end
 -- =============================================================================
 -- PET MANAGEMENT
 -- =============================================================================
@@ -188,6 +165,30 @@ end
 
 function GetPlayerPets(playerID)
     return db.query("SELECT * FROM feature_pets WHERE owner_id = " .. playerID .. " ORDER BY is_active DESC, level DESC")
+end
+
+function GetPetByID(petID)
+    local query = db.query("SELECT * FROM feature_pets WHERE id = " .. petID)
+    if query and #query > 0 then return query[1] end
+    return nil
+end
+
+function DeactivatePet(playerID)
+    db.execute("UPDATE feature_pets SET is_active = 0 WHERE owner_id = " .. playerID)
+    return true
+end
+
+function GetPetSkills(petID)
+    return db.query("SELECT * FROM feature_pet_skills WHERE pet_id = " .. petID)
+end
+
+function GetTotalSkillValue(petID)
+    local skills = db.query("SELECT base_value FROM feature_pet_skills WHERE pet_id = " .. petID)
+    local total = 0
+    for _, skill in ipairs(skills) do
+        total = total + skill.base_value
+    end
+    return total
 end
 
 -- =============================================================================
@@ -260,6 +261,6 @@ return {
     
     -- Events
     TriggerPetEvolution = TriggerPetEvolution,
-    TriggerPetLevelUp = TriggerPetLevelUp
+    TriggerPetLevelUp = TriggerPetLevelUp,
     GrantUltraEvolutionBonus = GrantUltraEvolutionBonus
 }
