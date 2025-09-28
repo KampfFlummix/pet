@@ -30,7 +30,7 @@ end
 
 function ShowPetManagement()
 	local playerID = pc.get_id()
-	local pets = feature_pet_system.GetPlayerPets(playerID)
+	local pets = GetPlayerPets(playerID)
 	
 	if not pets or #pets == 0 then
 		say("Du hast noch keine Pets!")
@@ -57,29 +57,29 @@ function ShowPetDetails(pet)
 	say_title("Pet-Details:")
 	say(string.format("Name: %s", pet.name))
 	say(string.format("Level: %d / 120", pet.level))
-	say(string.format("Quality: %s", feature_pet_quality.GetQualityDisplayName(pet.quality_level)))
+	say(string.format("Quality: %s", GetQualityDisplayName(pet.quality_level)))
 	say(string.format("Evolution: Stufe %d", pet.evolution_stage))
-	say(string.format("XP: %d / %d", pet.xp, feature_pet_system.GetXPForLevel(pet.level)))
+	say(string.format("XP: %d / %d", pet.xp, GetXPForLevel(pet.level)))
 	
 	-- Skills anzeigen
-	local skills = feature_pet_system.GetPetSkills(pet.id)
+	local skills = GetPetSkills(pet.id)
 	if skills and #skills > 0 then
 		say("")
 		say("Aktive Skills:")
 		for _, skill in ipairs(skills) do
-			local skillName = feature_pet_skills.GetSkillDisplayName(skill.skill_type)
-			local currentBonus = feature_pet_system.GetPetBonus(playerID, skill.skill_type)
+			local skillName = GetSkillDisplayName(skill.skill_type)
+			local currentBonus = GetPetBonus(playerID, skill.skill_type)
 			say(string.format("- %s: %.1f%%", skillName, currentBonus))
 		end
 	end
 	
 	-- DNA anzeigen
-	local dna = feature_pet_dna.GetPetDNAInfo(pet.id)
+	local dna = GetPetDNAInfo(pet.id)
 	if dna and #dna > 0 then
 		say("")
 		say("DNA-Modifikationen:")
 		for _, d in ipairs(dna) do
-			local dnaInfo = feature_pet_dna.DNA_TYPES[d.dna_type]
+			local dnaInfo = DNA_TYPES[d.dna_type]
 			if dnaInfo then
 				say(string.format("- %s (Stufe %d)", dnaInfo.name, d.dna_level))
 			end
@@ -97,10 +97,10 @@ function ShowPetDetails(pet)
 	when select begin
 		if input == 1 then
 			if pet.is_active == 0 then
-				feature_pet_system.ActivatePet(playerID, pet.id)
+				ActivatePet(playerID, pet.id)
 				say("Pet aktiviert!")
 			else
-				feature_pet_system.DeactivatePet(playerID)
+				DeactivatePet(playerID)
 				say("Pet deaktiviert!")
 			end
 		end
@@ -117,7 +117,7 @@ function ShowPetFusion()
 		return
 	end
 	
-	local pets = feature_pet_system.GetPlayerPets(playerID)
+	local pets = GetPlayerPets(playerID)
 	local availablePets = {}
 	
 	for _, pet in ipairs(pets) do
@@ -150,7 +150,7 @@ function ShowPetFusion()
 		select(1, "Ja, fusionieren!", 2, "Nein, abbrechen!")
 		
 		when select with input == 1 do
-			local success, message = feature_pet_fusion.StartPetFusion(playerID, activePet.id, sacrificePet.id)
+			local success, message = StartPetFusion(playerID, activePet.id, sacrificePet.id)
 			say(message)
 			ShowPetManagement()
 		end
@@ -171,7 +171,7 @@ function ShowMissions()
 	local hasCompleted = false
 	
 	for i, mission in ipairs(missions) do
-		local missionInfo = feature_pet_missions.GetMissionInfo(mission.mission_type)
+		local missionInfo = GetMissionInfo(mission.mission_type)
 		if missionInfo then
 			local status = ""
 			if mission.completed == 1 then
@@ -198,7 +198,7 @@ function ShowMissions()
 		if input <= #missions then
 			local mission = missions[input]
 			if mission.completed == 1 and mission.reward_claimed == 0 then
-				feature_pet_missions.ClaimMissionReward(playerID, mission.mission_type)
+				ClaimMissionReward(playerID, mission.mission_type)
 			else
 				say("Mission noch nicht abgeschlossen oder Belohnung bereits abgeholt!")
 			end
@@ -207,7 +207,7 @@ function ShowMissions()
 			-- Alle Belohnungen abholen
 			for _, mission in ipairs(missions) do
 				if mission.completed == 1 and mission.reward_claimed == 0 then
-					feature_pet_missions.ClaimMissionReward(playerID, mission.mission_type)
+					ClaimMissionReward(playerID, mission.mission_type)
 				end
 			end
 			say("Alle Belohnungen abgeholt!")
@@ -219,7 +219,7 @@ function ShowMissions()
 end
 
 function ShowArenaRankings()
-	local topPets = feature_pet_arena.GetTopRankedPets(10)
+	local topPets = GetTopRankedPets(10)
 	
 	say("🏆 Pet-Arena Rangliste:")
 	say("Die stärksten Pets des Servers:")
@@ -231,7 +231,7 @@ function ShowArenaRankings()
 	end
 	
 	for i, rankedPet in ipairs(topPets) do
-		local pet = feature_pet_system.GetPetByID(rankedPet.pet_id)
+		local pet = GetPetByID(rankedPet.pet_id)
 		if pet then
 			local owner = pc.get_name_by_id(pet.owner_id) or "Unbekannt"
 			say(string.format("%d. %s (Lv%d) - %s", i, pet.name, pet.level, owner))
