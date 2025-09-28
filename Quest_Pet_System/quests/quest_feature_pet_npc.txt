@@ -110,7 +110,7 @@ end
 
 function ShowPetFusion()
 	local playerID = pc.get_id()
-	local activePet = feature_pet_system.GetActivePet(playerID)
+	local activePet = GetActivePet(playerID)
 	
 	if not activePet then
 		say("Du musst erst ein Pet aktivieren!")
@@ -159,7 +159,7 @@ end
 
 function ShowMissions()
 	local playerID = pc.get_id()
-	local missions = feature_pet_missions.GetPlayerMissions(playerID)
+	local missions = GetPlayerMissions(playerID)
 	
 	if not missions or #missions == 0 then
 		say("Keine aktiven Missionen!")
